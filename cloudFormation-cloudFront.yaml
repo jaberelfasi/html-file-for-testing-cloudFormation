@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: This is a technical test
+
+Resources:
+  WebFiles:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: technical-test-bucket
+      WebsiteConfiguration:
+        IndexDocument: index.html
+
+  OriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: 'origin identity'
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: technical-test-bucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${OriginAccessIdentity}'
+            Action: 's3:GetObject'
+            Resource: arn:aws:s3:::technical-test-bucket/*
+
+  CloudFront:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - DomainName: technical-test-bucket.s3.eu-west-2.amazonaws.com
+            Id: S3-technical-test-bucket
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${OriginAccessIdentity}'
+        Enabled: 'true'
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+          TargetOriginId: S3-technical-test-bucket
+          ViewerProtocolPolicy: redirect-to-https
+          ForwardedValues:
+              QueryString: 'false'
+              Cookies:
+                Forward: none
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: 'true'
+        DefaultRootObject: index.html
