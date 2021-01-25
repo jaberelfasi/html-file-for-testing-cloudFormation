@@ -32,7 +32,7 @@ echo "Start creating the infrastructure"
 echo "============================================================================================"
 aws cloudformation deploy --stack-name cloudfront-s3-stack --template-file cloudFormation-cloudFront.yaml
 stackStatus=$(aws cloudformation describe-stacks --stack-name cloudfront-s3-stack --query 'Stacks[].StackStatus' --output text)
-while [[ ${stackStatus} == "CREATE_IN_PROGRESS" ]]
+while [[ ${stackStatus} != "CREATE_COMPLETE" ]]
 do
   echo ${stackStatus}
   sleep 5
@@ -50,3 +50,16 @@ else
   echo "couldn't upload index file as infrastructure wasn't created properly"
 fi
 echo "============================================================================================"
+
+
+cloudFrontDomain=$(aws cloudfront list-distributions --query "DistributionList.Items[*].{domain:DomainName,origin:Origins.Items[0].Id}[?origin=='S3-technical-test-bucket'].domain" --output text)
+s3SecureDomain=$(aws cloudfront list-distributions --query "DistributionList.Items[*].{id:Origins.Items[0].Id, domain:Origins.Items[0].DomainName}[?id=='S3-technical-test-bucket'].domain" --output text)
+
+echo "********************************************************"
+echo "********************************************************"
+echo "********************************************************"
+echo "The cloudFront public url is ${cloudFrontDomain}"
+echo "The secure S3 url is ${s3SecureDomain}"
+echo "********************************************************"
+echo "********************************************************"
+echo "********************************************************"
